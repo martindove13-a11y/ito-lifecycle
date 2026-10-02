@@ -1,0 +1,36 @@
+# ito-lifecycle. Served at lifecycle.itstheoutcome.com.
+# Copied from the Sprint skeleton. Explicit rules stay above the catch-all. Never add a _redirects
+# file alongside this. Check the repo name in the breadcrumb before uploading this file anywhere.
+
+[build]
+  functions = "netlify/functions"
+
+# Scheduled function: runs daily, no code-side cron needed. Expires invites, refreshes Aggregates,
+# and sends renewal follow-ups once DIAG_FOLLOWUP_ENABLED is set. A stub in phase 1.
+[functions."diag-nudge"]
+  schedule = "@daily"
+
+[[redirects]]
+  from = "/login"
+  to = "/login.html"
+  status = 200
+
+[[redirects]]
+  from = "/check"
+  to = "/check.html"
+  status = 200
+
+[[redirects]]
+  from = "/review"
+  to = "/review.html"
+  status = 200
+
+[[redirects]]
+  from = "/rep"
+  to = "/rep.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

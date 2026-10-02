@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!-- DIAG_BUILD_MARKER_2026_10_P1 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Value diagnostic. It's The Outcome.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #111111; --orange: #E05C2A; --offwhite: #F5F4F1; --midgray: #6B6B6B;
+    --bg: var(--offwhite); --bg-secondary: #ECEAE6; --bg-card: #FFFFFF;
+    --text: var(--black); --text-secondary: var(--midgray); --text-tertiary: #9B9B9B;
+    --border: rgba(17,17,17,0.10); --border-md: rgba(17,17,17,0.20); --border-strong: rgba(17,17,17,0.35);
+    --bg-success: #DFF0D0; --bg-info: #D6E8F7; --bg-warning: #FAE8C8; --bg-danger: #FAD6D0;
+    --text-success: #2A5C0E; --text-info: #0F4880; --text-warning: #7A3E00; --text-danger: #8C1F10;
+    --radius: 4px; --radius-lg: 6px; --radius-xl: 8px;
+    --font: 'Inter', Helvetica Neue, Helvetica, Arial, sans-serif;
+  }
+  html, body { height: 100%; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+  .site-header { background: var(--black); padding: 0 1.5rem; display: flex; align-items: center; height: 52px; gap: 16px; flex-shrink: 0; }
+  .logo-lockup { display: flex; flex-direction: column; line-height: 1.04; }
+  .logo-its { font-size: 8px; color: rgba(255,255,255,0.80); line-height: 1; }
+  .logo-outcome { font-size: 15px; color: #fff; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .logo-period { color: var(--orange); }
+  .header-rule { flex: 1; height: 1px; background: rgba(255,255,255,0.12); }
+  .header-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 5rem; flex: 1; width: 100%; }
+  .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); display: block; margin-bottom: 8px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
+  p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; max-width: 52ch; }
+  .rule { height: 1px; background: var(--border-md); margin: 1.75rem 0; }
+  .muted { font-size: 12px; color: var(--text-tertiary); }
+  .foot { padding: 1rem 1.25rem; font-size: 11px; color: var(--text-tertiary); text-align: center; border-top: 0.5px solid var(--border); }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="logo-lockup">
+    <span class="logo-its">It's The</span>
+    <span class="logo-outcome">Outcome<span class="logo-period">.</span></span>
+  </div>
+  <div class="header-rule"></div>
+  <span class="header-tag">Value diagnostic</span>
+</header>
+
+<main class="wrap">
+  <span class="eyebrow">Can you still see the value you sold?</span>
+  <h1>Pick one deal that is heading for renewal.</h1>
+  <p>The diagnostic asks nine questions about that one deal, from your own seat, and shows you where the thread between what was promised and what can be shown today breaks. Under ten minutes. No customer names, ever.</p>
+  <div class="rule"></div>
+  <p class="muted">The check opens here shortly. Facilitators and reps can <a href="/login" style="color:inherit;">sign in</a>.</p>
+</main>
+
+<footer class="foot">It's The Outcome</footer>
+</body>
+</html>

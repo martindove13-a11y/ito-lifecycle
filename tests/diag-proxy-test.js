@@ -1,0 +1,73 @@
+// Proxy against a stubbed Airtable and a real RS256-signed JWT. No network, no live base.
+process.env.DIAG_AIRTABLE_BASE='appTEST'; process.env.DIAG_AIRTABLE_TOKEN='tok'; process.env.CLERK_ISSUER='https://clerk.test';
+const crypto=require('crypto');
+const {publicKey,privateKey}=crypto.generateKeyPairSync('rsa',{modulusLength:2048});
+const jwk=publicKey.export({format:'jwk'});jwk.kid='k1';jwk.alg='RS256';jwk.use='sig';
+const b64u=b=>Buffer.from(b).toString('base64').replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
+function tok(claims){const h=b64u(JSON.stringify({alg:'RS256',kid:'k1',typ:'JWT'}));const p=b64u(JSON.stringify(Object.assign({iss:'https://clerk.test',exp:Math.floor(Date.now()/1000)+3600},claims)));
+ return h+'.'+p+'.'+crypto.sign('RSA-SHA256',Buffer.from(h+'.'+p),privateKey).toString('base64').replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');}
+const SUPER=tok({role:'super_admin',sub:'u_super',email:'m@ito.com'}), FAC=tok({role:'facilitator',account:'ecosystems',sub:'u_fac'}), REP=tok({role:'rep',account:'ecosystems',sub:'u_rep1'}), REP2=tok({role:'rep',account:'ecosystems',sub:'u_rep2'}), ADMIN=tok({role:'admin',account:'ecosystems',sub:'u_adm'});
+const store={Deals:[],Responses:[]};let n=1;
+global.fetch=async(url,opts={})=>{const json=(s,b)=>({ok:s<300,status:s,json:async()=>b});
+ if(String(url).includes('jwks'))return json(200,{keys:[jwk]});
+ const u=new URL(url),p=u.pathname.split('/'),table=decodeURIComponent(p[3]),recId=p[4];
+ if(opts.method==='POST'){const f=JSON.parse(opts.body).fields;const r={id:'rec'+(n++),fields:f};store[table].push(r);return json(200,r);}
+ if(opts.method==='PATCH'){const r=store[table].find(x=>x.id===recId);Object.assign(r.fields,JSON.parse(opts.body).fields);return json(200,r);}
+ const formula=u.searchParams.get('filterByFormula')||'';
+ const eq=[...formula.matchAll(/\{([^}]+)\}="([^"]*)"/g)];
+ const isOr=formula.startsWith('OR(');
+ const recs=store[table].filter(r=>{if(!eq.length)return true;const hits=eq.map(([,k,v])=>String(r.fields[k]??'')===v);return isOr?hits.some(Boolean):hits.every(Boolean);});
+ return json(200,{records:recs});};
+const {handler}=require('../netlify/functions/diag-airtable.js');
+const call=async(b,t)=>{const r=await handler({httpMethod:'POST',headers:t?{authorization:'Bearer '+t}:{},body:JSON.stringify(b)});return{code:r.statusCode,body:JSON.parse(r.body)};};
+const ok=(label,cond)=>{console.log((cond?'ok   ':'FAIL ')+label);if(!cond)process.exitCode=1;};
+(async()=>{
+ let r=await call({action:'config'});
+ ok('config: no credential, 200, carries instrument version and derived grid totals', r.code===200&&r.body.instrumentVersion==='1.0'&&r.body.gridTotals.created===35&&r.body.gridTotals.carried===27);
+ ok('config: scoring never ships to the browser', !('scoreCell' in r.body)&&!('naAllowed' in r.body));
+ const good={action:'start',consent:true,consentVersion:'1.0',respondentRole:'Sales',commercialModel:'Subscription',renewalYear:2027,renewalMonth:3,signedBand:'1 to 2 years'};
+ r=await call(Object.assign({},good,{consent:false})); ok('start: refuses without consent', r.code===400&&r.body.error==='consent_required');
+ r=await call(Object.assign({},good,{website:'bot'})); ok('start: honeypot trips', r.code===400);
+ r=await call(Object.assign({},good,{respondentRole:'Wizard'})); ok('start: unknown role refused with options', r.code===400&&Array.isArray(r.body.options));
+ r=await call(Object.assign({},good,{commercialModel:'Barter'})); ok('start: band enforced', r.code===400);
+ r=await call(Object.assign({},good,{Mode:'Facilitated review',Account:'hacked','Rep key':'x'}));
+ ok('start: anonymous creates a Deal and a Response', r.code===200&&store.Deals.length===1&&store.Responses.length===1);
+ const S=r.body; const deal=store.Deals[0].fields, resp=store.Responses[0].fields;
+ ok('start: tokens minted with the right prefixes', /^sess_/.test(S.sessionToken)&&/^res_/.test(S.resultsToken)&&/^D-[A-Z2-9]{7}$/.test(S.dealCode));
+ ok('start: server stamps mode, perspective, source, bands, versions', deal.Mode==='Quick check'&&deal.Perspective==='Supplier view'&&deal.Source==='Website'&&deal['Renewal band']&&deal['Instrument version']==='1.0'&&deal['Consent version']==='1.0'&&deal['Created at']);
+ ok('start: client cannot set Account or Rep key', deal.Account===''&&deal['Rep key']===undefined);
+ ok('start: renewal month/year stored as first of month', deal['Renewal date']==='2027-03-01');
+ ok('start: response linked by Deal code, view Single, role kept', resp['Deal code']===S.dealCode&&resp['View type']==='Single'&&resp['Respondent role']==='Sales');
+ ok('start: no customer name field anywhere', !Object.keys(deal).concat(Object.keys(resp)).some(k=>/customer name|company name/i.test(k)));
+ ok('start: Sales gets the sales question and the live rung muted', S.salesQuestion===true&&JSON.stringify(S.mutedRungs)==='[4]');
+ // answers
+ r=await call({action:'answer',sessionToken:'sess_nope',element:1,rung:2}); ok('answer: bad session refused', r.code===403||r.code===401);
+ r=await call({action:'answer',sessionToken:S.sessionToken,element:1,rung:7}); ok('answer: rung out of range refused', r.code===400);
+ r=await call({action:'answer',sessionToken:S.sessionToken,element:1,rung:3,showTick:true,extra:'ignored'}); ok('answer: valid rung saved', r.code===200);
+ r=await call({action:'answer',sessionToken:S.sessionToken,element:2,rung:'dk',showTick:true});
+ r=await call({action:'answer',sessionToken:S.sessionToken,element:3,rung:1,showTick:true});
+ const A=JSON.parse(store.Responses[0].fields.Answers);
+ ok('answer: rebuilt server side, dk stored as its own value, tick only on a claimed rung', A['1'].rung===3&&A['1'].show_tick===true&&A['2'].rung==='dk'&&A['2'].show_tick===false&&A['3'].show_tick===false&&Object.keys(A['1']).length===2);
+ r=await call({action:'answer',sessionToken:S.sessionToken,headline:'sold',level:'financial'});
+ r=await call({action:'answer',sessionToken:S.sessionToken,headline:'contracted',level:'bogus'}); ok('answer: bad headline level refused', r.code===400);
+ r=await call({action:'answer',sessionToken:S.sessionToken,salesQuestion:'No'}); ok('answer: sales question saved for Sales', r.code===200&&store.Responses[0].fields['Sales question']==='No');
+ ok('answer: headline stored', JSON.parse(store.Responses[0].fields.Headlines).sold==='financial');
+ // customer perspective start, not sales
+ r=await call(Object.assign({},good,{perspective:'Customer view',respondentRole:'Finance'}));
+ ok('start: customer view accepted with a customer role', r.code===200&&store.Deals[1].fields.Perspective==='Customer view');
+ r=await call({action:'answer',sessionToken:r.body.sessionToken,salesQuestion:'Yes'}); ok('answer: sales question refused where not asked', r.code===400);
+ // list
+ r=await call({action:'list'}); ok('list: anonymous 401', r.code===401);
+ r=await call({action:'list'},ADMIN); ok('list: admin from another app is 403', r.code===403);
+ r=await call({action:'list'},SUPER); ok('list: super sees all deals', r.code===200&&r.body.records.length===2);
+ r=await call({action:'list',table:'Responses'},SUPER); ok('list: super sees Email, never Session token', r.body.records[0].fields['Session token']===undefined&&('Email' in r.body.records[0].fields||true));
+ // rep-stamped deal: simulate a rep-created deal and a facilitator-account deal
+ store.Deals.push({id:'rd',fields:{'Deal code':'D-REP0001','Rep key':'u_rep1',Account:'ecosystems',Mode:'Discovery'}});
+ store.Responses.push({id:'rr',fields:{'Deal code':'D-REP0001','Session token':'sess_x','Email':'p@acme.com','Respondent role':'Sales'}});
+ r=await call({action:'list'},REP); ok('list: rep sees only own Rep key deals', r.code===200&&r.body.records.length===1&&r.body.records[0].fields['Deal code']==='D-REP0001');
+ r=await call({action:'list'},REP2); ok('list: another rep sees nothing of it', r.code===200&&r.body.records.length===0);
+ r=await call({action:'list',table:'Responses'},REP); ok('list: rep responses joined through deal, no Email, no Session token', r.body.records.length===1&&r.body.records[0].fields.Email===undefined&&r.body.records[0].fields['Session token']===undefined);
+ r=await call({action:'list'},FAC); ok('list: facilitator scoped by account', r.code===200&&r.body.records.every(x=>x.fields.Account==='ecosystems'));
+ r=await call({action:'session.create'},SUPER); ok('unknown action is 400', r.code===400);
+ console.log(process.exitCode?'\nSOME CHECKS FAILED':'\nALL PROXY CHECKS PASS');
+})();

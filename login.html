@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<!-- DIAG_BUILD_MARKER_2026_10_P1 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in. Value diagnostic. It's The Outcome.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--black:#111111;--orange:#E05C2A;--offwhite:#F5F4F1;--midgray:#6B6B6B;--font:'Inter',Helvetica,Arial,sans-serif;}
+html,body{height:100%;font-family:var(--font);background:var(--offwhite);color:var(--black);}
+body{display:flex;flex-direction:column;min-height:100vh;}
+.site-header{background:var(--black);padding:0 2rem;display:flex;align-items:center;height:56px;gap:18px;flex-shrink:0;}
+.logo-lockup{display:flex;flex-direction:column;line-height:1.2;}
+.logo-its{font-size:11px;color:rgba(255,255,255,0.75);font-weight:400;}
+.logo-outcome{font-size:15px;color:#fff;font-weight:700;letter-spacing:-0.02em;}
+.logo-period{color:var(--orange);}
+.header-rule{flex:1;height:1px;background:rgba(255,255,255,0.12);}
+.header-tag{font-size:10px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:var(--orange);}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem 1.25rem;}
+.card{background:#fff;border:1px solid rgba(17,17,17,0.12);border-radius:10px;padding:2rem 2.25rem;width:100%;max-width:400px;}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:var(--orange);margin-bottom:8px;}
+h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--black);margin-bottom:6px;}
+.sub{font-size:13px;color:var(--midgray);line-height:1.6;margin-bottom:1.75rem;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--black);margin-bottom:5px;}
+.field input{width:100%;padding:10px 12px;border:1px solid rgba(17,17,17,0.20);border-radius:4px;font-size:14px;font-family:var(--font);color:var(--black);background:#fff;outline:none;transition:border-color 0.12s;}
+.field input:focus{border-color:var(--orange);}
+.field input::placeholder{color:#9B9B9B;}
+.btn{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:4px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:background 0.12s;margin-top:4px;}
+.btn:hover{background:#c44e22;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+.msg{font-size:12px;padding:8px 12px;border-radius:4px;margin-top:12px;display:none;line-height:1.5;}
+.msg.error{color:#8C1F10;background:#FAD6D0;border:1px solid #C84030;display:block;}
+.msg.success{color:#2A5C0E;background:#DFF0D0;border:1px solid #6AAF3A;display:block;}
+.forgot{display:block;text-align:center;margin-top:14px;font-size:12px;color:var(--midgray);cursor:pointer;background:none;border:none;font-family:var(--font);text-decoration:underline;width:100%;}
+.forgot:hover{color:var(--black);}
+.divider{height:1px;background:rgba(17,17,17,0.08);margin:1.5rem 0;}
+.help{font-size:12px;color:var(--midgray);text-align:center;line-height:1.6;}
+.help a{color:var(--orange);text-decoration:none;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.footer{background:var(--black);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.footer-logo-its{font-size:10px;color:rgba(255,255,255,0.5);}
+.footer-logo-outcome{font-size:13px;color:#fff;font-weight:700;letter-spacing:-0.02em;}
+.footer-logo-period{color:var(--orange);}
+.footer-copy{font-size:11px;color:rgba(255,255,255,0.3);}
+</style>
+  <script>
+  // Role routing for this app. The three signed-in roles are super_admin, facilitator and rep.
+  // Anything else, including the admin role other apps use, is told it has no access here.
+  var ITO = (function () {
+    function meta(u) { return (u && u.publicMetadata) || {}; }
+    function roleOf(u) { return meta(u).role || ''; }
+    function accountOf(u) { return meta(u).account || ''; }
+    function homeUrl(u) {
+      var r = roleOf(u);
+      if (r === 'super_admin' || r === 'facilitator') return '/review';
+      if (r === 'rep') return '/rep';
+      return '/login?noaccess=1';
+    }
+    return { roleOf: roleOf, accountOf: accountOf, homeUrl: homeUrl };
+  })();
+  </script>
+  <script defer crossorigin="anonymous" data-clerk-publishable-key="pk_live_Y2xlcmsuaXRzdGhlb3V0Y29tZS5jb20k" src="https://clerk.itstheoutcome.com/npm/@clerk/clerk-js@latest/dist/clerk.browser.js" type="text/javascript"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="logo-lockup">
+    <span class="logo-its">It's The</span>
+    <span class="logo-outcome">Outcome<span class="logo-period">.</span></span>
+  </div>
+  <div class="header-rule"></div>
+  <span class="header-tag">Value diagnostic</span>
+</header>
+
+<main class="main">
+  <div class="card">
+    <div class="eyebrow">Value diagnostic</div>
+    <h1 id="page-title">Sign in</h1>
+    <p class="sub" id="page-sub">Facilitators and reps sign in here. Respondents to the check do not need an account.</p>
+
+    <div id="signin-form">
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" placeholder="you@company.com" autocomplete="email" />
+      </div>
+      <div class="field" id="password-field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your password" autocomplete="current-password" />
+      </div>
+      <div class="field" id="new-password-field" style="display:none;">
+        <label for="new-password">Choose a password</label>
+        <input type="password" id="new-password" placeholder="At least 8 characters" />
+      </div>
+      <button class="btn" id="signin-btn" onclick="handleSubmit()">Sign in</button>
+      <div class="msg" id="msg"></div>
+      <button class="forgot" id="forgot-btn" onclick="showForgot()">Forgot your password?</button>
+      <div id="forgot-section" style="display:none;margin-top:12px;">
+        <div class="field">
+          <label for="reset-email">Your email address</label>
+          <input type="email" id="reset-email" placeholder="you@company.com" />
+        </div>
+        <button class="btn" style="background:var(--black);" onclick="sendReset()">Send reset email</button>
+      </div>
+    </div>
+
+    <div id="clerk-captcha"></div>
+    <div class="divider"></div>
+    <p class="help">Don't have access yet? <a href="mailto:support@itstheoutcome.com">Contact It's The Outcome</a></p>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="logo-lockup">
+    <span class="footer-logo-its">It's The</span>
+    <span class="footer-logo-outcome">Outcome<span class="footer-logo-period">.</span></span>
+  </div>
+  <span class="footer-copy">&copy; 2026 It's The Outcome.</span>
+</footer>
+
+<script>
+var clerk;
+var currentMode = 'signin'; // signin | set-password
+var inviteTicket = null;
+var inviteSignUp = null; // the sign-up created from the ticket, reused at submit
+
+// Check for invite ticket in URL
+var urlParams = new URLSearchParams(window.location.search);
+inviteTicket = urlParams.get('__clerk_ticket') || urlParams.get('ticket');
+
+async function initClerk() {
+  var signinBtn = document.getElementById('signin-btn');
+  if (signinBtn) signinBtn.disabled = true;   // stay disabled until Clerk is ready
+  try {
+    clerk = window.Clerk;
+    if (!clerk) throw new Error('Clerk script did not load');
+    await clerk.load();
+  } catch (e) {
+    console.error('Clerk failed to load:', e);
+    showMsg('We could not reach the sign-in service. Please refresh the page and try again.', 'error');
+    return;   // leave the button disabled, signing in is impossible without Clerk
+  }
+  if (signinBtn) signinBtn.disabled = false;
+
+  // If invite ticket in URL, always process it (sign out existing session first)
+  if (inviteTicket) {
+    if (clerk.user) {
+      await clerk.signOut();
+    }
+    await showInviteMode();
+    return;
+  }
+
+  // Normal flow. If already signed in, show the claims and offer to continue.
+  if (clerk.user) {
+    redirectToDashboard(clerk.user);
+    return;
+  }
+  if (new URLSearchParams(location.search).get('noaccess')) {
+    showMsg('That account has no access to the diagnostic. Sign in with a facilitator or rep account.', 'error');
+  }
+}
+
+async function showInviteMode() {
+  document.getElementById('page-title').textContent = 'Set your password';
+  document.getElementById('page-sub').textContent = 'Choose a password to complete your account setup.';
+  document.getElementById('password-field').style.display = 'none';
+  document.getElementById('new-password-field').style.display = '';
+  document.getElementById('forgot-btn').style.display = 'none';
+  document.getElementById('signin-btn').textContent = 'Set password and continue';
+  currentMode = 'set-password';
+
+  // Process the invite ticket now so we can show the invited email (read-only)
+  // and reuse the same sign-up when they set their password.
+  try {
+    inviteSignUp = await clerk.client.signUp.create({ strategy: 'ticket', ticket: inviteTicket });
+    var invitedEmail = inviteSignUp && inviteSignUp.emailAddress;
+    var emailField = document.getElementById('email');
+    if (emailField && invitedEmail) {
+      emailField.value = invitedEmail;
+      emailField.readOnly = true;
+      emailField.style.background = 'var(--offwhite)';
+      emailField.style.color = 'var(--midgray)';
+      emailField.style.cursor = 'not-allowed';
+    }
+  } catch (e) {
+    // If the ticket can't be processed up front, leave the field editable and
+    // let acceptInvite create the sign-up when they submit.
+    console.error('Invite ticket processing failed:', e);
+  }
+}
+
+async function handleSubmit() {
+  if (currentMode === 'set-password') {
+    await acceptInvite();
+  } else {
+    await signIn();
+  }
+}
+
+async function signIn() {
+  if (!clerk || !clerk.client) {
+    showMsg('Still connecting to the sign-in service. Please wait a moment and try again.', 'error');
+    return;
+  }
+  var email = document.getElementById('email').value.trim();
+  var pw    = document.getElementById('password').value;
+  var btn   = document.getElementById('signin-btn');
+  clearMsg();
+
+  if (!email || !pw) { showMsg('Please enter your email and password.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Signing in...';
+
+  try {
+    var result = await clerk.client.signIn.create({
+      identifier: email,
+      password: pw
+    });
+
+    if (result.status === 'complete') {
+      await clerk.setActive({ session: result.createdSessionId });
+      redirectToDashboard(clerk.user);
+    } else if (result.status === 'needs_client_trust' || result.status === 'needs_second_factor') {
+      // Clerk needs to verify the device (Client Trust) or a second factor - send an email code
+      var emailFactor = result.supportedSecondFactors && result.supportedSecondFactors.find(function(f) {
+        return f.strategy === 'email_code';
+      });
+      if (!emailFactor) {
+        emailFactor = result.supportedFirstFactors && result.supportedFirstFactors.find(function(f) {
+          return f.strategy === 'email_code';
+        });
+      }
+      if (emailFactor) {
+        // Prepare email code verification
+        await result.prepareSecondFactor({ strategy: 'email_code', emailAddressId: emailFactor.emailAddressId });
+        // Show code input
+        showEmailCodeForm(result);
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+        showMsg('Verification required. Please contact support@itstheoutcome.com', 'error');
+      }
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      showMsg('Could not sign in. Status: ' + result.status, 'error');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+    var errMsg = (e.errors && e.errors[0] && e.errors[0].longMessage) || e.message || 'Incorrect email or password.';
+    showMsg(errMsg, 'error');
+  }
+}
+
+function showEmailCodeForm(signInAttempt) {
+  // Only show once - check if already showing
+  if (document.getElementById('code-field')) {
+    // Just update the onclick for the new attempt
+    var btn = document.getElementById('signin-btn');
+    btn.onclick = function() { verifyCode(signInAttempt); };
+    return;
+  }
+  document.getElementById('password-field').style.display = 'none';
+  document.getElementById('email').disabled = true;
+  showMsg('A verification code has been sent to ' + document.getElementById('email').value + '. Enter it below.', 'success');
+  
+  var codeField = document.createElement('div');
+  codeField.className = 'field';
+  codeField.id = 'code-field';
+  codeField.innerHTML = '<label for="verify-code">Verification code</label><input type="text" id="verify-code" placeholder="6-digit code" autocomplete="one-time-code" style="letter-spacing:0.1em;" />';
+  
+  var btn = document.getElementById('signin-btn');
+  btn.parentNode.insertBefore(codeField, btn);
+  btn.textContent = 'Verify and sign in';
+  btn.onclick = function() { verifyCode(signInAttempt); };
+  document.getElementById('forgot-btn').style.display = 'none';
+}
+
+async function verifyCode(signInAttempt) {
+  var code = document.getElementById('verify-code').value.trim();
+  var btn  = document.getElementById('signin-btn');
+  clearMsg();
+  if (!code) { showMsg('Please enter the verification code.', 'error'); return; }
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Verifying...';
+  
+  try {
+    var result = await signInAttempt.attemptSecondFactor({
+      strategy: 'email_code',
+      code: code
+    });
+    if (result.status === 'complete') {
+      await clerk.setActive({ session: result.createdSessionId });
+      redirectToDashboard(clerk.user);
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Verify and sign in';
+      showMsg('Invalid code. Please try again.', 'error');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Verify and sign in';
+    var errMsg = (e.errors && e.errors[0] && e.errors[0].longMessage) || 'Invalid code.';
+    showMsg(errMsg, 'error');
+  }
+}
+
+async function acceptInvite() {
+  if (!clerk || !clerk.client) {
+    showMsg('Still connecting to the sign-in service. Please wait a moment and try again.', 'error');
+    return;
+  }
+  var pw  = document.getElementById('new-password').value;
+  var btn = document.getElementById('signin-btn');
+  clearMsg();
+
+  if (pw.length < 8) { showMsg('Password must be at least 8 characters.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Setting up your account...';
+
+  try {
+    console.log('Attempting invite with ticket:', inviteTicket ? inviteTicket.substring(0, 20) + '...' : 'MISSING');
+    
+    // Reuse the sign-up created when the screen loaded (so the email shown and
+    // this submission are the same sign-up). Fall back to creating it if needed.
+    var signUp = inviteSignUp || await clerk.client.signUp.create({
+      strategy: 'ticket',
+      ticket: inviteTicket
+    });
+
+    // Step 2: Set password
+    if (signUp.status === 'missing_requirements' || signUp.status === 'complete') {
+      var updated = await signUp.update({ password: pw });
+      console.log('signUp after password:', updated.status);
+      
+      if (updated.status === 'complete') {
+        await clerk.setActive({ session: updated.createdSessionId });
+        redirectToDashboard(clerk.user);
+        return;
+      }
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Set password and continue';
+    showMsg('Could not complete setup. Status: ' + (signUp.status || 'unknown'), 'error');
+
+  } catch(e) {
+    console.error('acceptInvite error:', e);
+    if (e.errors) e.errors.forEach(function(err) { console.error('Clerk error:', err.code, err.message, err.longMessage); });
+    btn.disabled = false;
+    btn.textContent = 'Set password and continue';
+    var errMsg = (e.errors && e.errors[0] && e.errors[0].longMessage) || e.message || 'Could not complete setup.';
+    showMsg(errMsg, 'error');
+  }
+}
+
+async function sendReset() {
+  var email = document.getElementById('reset-email').value.trim();
+  if (!email) { showMsg('Please enter your email address.', 'error'); return; }
+  try {
+    await clerk.client.signIn.create({
+      strategy: 'reset_password_email_code',
+      identifier: email
+    });
+    showMsg('Password reset email sent. Check your inbox.', 'success');
+    document.getElementById('forgot-section').style.display = 'none';
+  } catch(e) {
+    showMsg('Could not send reset email. Please try again.', 'error');
+  }
+}
+
+function redirectToDashboard(user) {
+  var role = ITO.roleOf(user), account = ITO.accountOf(user);
+  var email = (user && user.primaryEmailAddress && user.primaryEmailAddress.emailAddress) || '';
+  var dest = ITO.homeUrl(user);
+  var form = document.getElementById('signin-form'); if (form) form.style.display = 'none';
+  document.getElementById('page-title').textContent = role ? 'Signed in' : 'Signed in, but no role';
+  document.getElementById('page-sub').innerHTML =
+    '<span style="display:block;margin-bottom:6px;">' + esc(email) + '</span>' +
+    '<span style="display:block;font-size:12px;">role: <strong>' + (esc(role) || 'none') + '</strong> &middot; account: <strong>' + (esc(account) || 'none') + '</strong></span>' +
+    (role ? '' : '<span style="display:block;margin-top:10px;color:#8C1F10;">The session token carried no role. Check the Clerk session token template before touching code.</span>');
+  if (!role) return;
+  if (dest.indexOf('noaccess') >= 0) {
+    document.getElementById('page-sub').innerHTML += '<span style="display:block;margin-top:10px;color:#8C1F10;">This role has no access to the diagnostic.</span>';
+    return;
+  }
+  var btn = document.createElement('button'); btn.className = 'btn'; btn.textContent = 'Continue';
+  btn.onclick = function () { window.location.href = dest; };
+  document.querySelector('.card').appendChild(btn);
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+function showForgot() {
+  var section = document.getElementById('forgot-section');
+  section.style.display = section.style.display === 'none' ? '' : 'none';
+  document.getElementById('reset-email').value = document.getElementById('email').value;
+}
+
+function showMsg(msg, type) {
+  var el = document.getElementById('msg');
+  el.textContent = msg;
+  el.className = 'msg ' + type;
+}
+function clearMsg() {
+  var el = document.getElementById('msg');
+  el.className = 'msg';
+  el.textContent = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleSubmit();
+});
+
+</script>
+<script>
+window.addEventListener('load', function() {
+  initClerk();
+});
+</script>
+</body>
+</html>
