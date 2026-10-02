@@ -7,7 +7,9 @@ let bad=false; for(let e=1;e<=9;e++){let c=false;for(let m=1;m<=8;m++){const x=C
 ok('no carried cell precedes its own creation', !bad);
 ok('every element expected through to Renewal, so expected extent is the live rung', [1,2,3,4,5,6,7,8,9].every(e=>C.expectedExtent(e).moment===8&&C.expectedExtent(e).rung===4));
 ok('nine elements, eight moments, five rungs each side, four headline levels', C.ELEMENTS.length===9&&C.MOMENTS.length===8&&C.LADDER.supplier.length===5&&C.LADDER.customer.length===5&&C.HEADLINE_LEVELS.length===4);
-ok('every question sentence starts "In this deal,"', C.ELEMENTS.every(e=>e.supplier.startsWith('In this deal,')&&e.customer.startsWith('In this deal,')));
+ok('digital questions are short and plain, frame shown once per screen', C.ELEMENTS.every(e=>e.supplier.split(' ').length<=12&&!/^In this deal/.test(e.supplier))&&C.QUESTION_FRAME==='In this deal');
+ok('facilitator register keeps the fuller sentences starting "In this deal,"', C.ELEMENTS.every(e=>e.facilitator.supplier.startsWith('In this deal,')&&e.facilitator.customer.startsWith('In this deal,')));
+ok('bottom rung is a plain no on both sides', /^No\./.test(C.LADDER.supplier[0])&&/^No\./.test(C.LADDER.customer[0]));
 ok('no sentence says "in your company" and no text says Outcome Chain', !JSON.stringify(C).match(/in your company|Outcome Chain/i));
 ok('instrument and consent versions are 1.0', C.INSTRUMENT_VERSION==='1.0'&&C.CONSENT_VERSION==='1.0');
 ok('three signed-in roles, and admin is not one', JSON.stringify(C.SIGNED_IN_ROLES)==='["super_admin","facilitator","rep"]');

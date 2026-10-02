@@ -1,5 +1,5 @@
 /* It's The Outcome. Value diagnostic: shared core.
-   DIAG_CORE_CHECK_P1_2026_10
+   DIAG_CORE_CHECK_P2B_2026_10
 
    One source of truth for the instrument. The nine elements, the eight moments, the question
    sentences and ladders for both perspectives, the headline levels, the bands, the role-to-moment
@@ -41,36 +41,47 @@ const MOMENTS = Object.freeze([
 ]);
 
 // ── The nine elements ───────────────────────────────────────────────────────
-// `prompt` is the one-line prompt on screen. `supplier` and `customer` are the question sentences
-// for each perspective. Every sentence starts "In this deal," and never "in your company."
+// `prompt` is the one-line prompt. `supplier` and `customer` are the plain digital questions: each
+// names the thing and lets the ladder say where it lives. `facilitator` holds the fuller sentences
+// the facilitated review uses. Both registers say the same thing. The frame "In this deal" is shown
+// once per screen (QUESTION_FRAME), never "in your company."
 const ELEMENTS = Object.freeze([
-  { n: 1, key: 'objectives',       label: 'Objectives',         prompt: 'what is the customer looking to achieve',
-    supplier: "In this deal, is the customer's business objective written down, with a named owner on their side?",
-    customer: 'In this deal, is your business objective written down, with a named owner on your side?' },
-  { n: 2, key: 'baselines',        label: 'Baselines',          prompt: 'current state, captured before you start',
-    supplier: 'In this deal, is there a measured starting value for the result the customer wants, with its source and date?',
-    customer: 'In this deal, is there a measured starting value for the result you want, with its source and date?' },
-  { n: 3, key: 'targets',          label: 'Targets',            prompt: 'the numbers and the deadlines',
-    supplier: 'In this deal, is there an agreed target, a number and a date, tied to that starting value?',
-    customer: 'In this deal, is there an agreed target, a number and a date, tied to that starting value?' },
-  { n: 4, key: 'evidence',         label: 'Evidence',           prompt: 'what data will prove it, who can audit it',
-    supplier: 'In this deal, is it agreed what data will show the result, where it comes from and who can audit it?',
-    customer: 'In this deal, is it agreed what data will show the result, where it comes from and who can audit it?' },
-  { n: 5, key: 'attribution',      label: 'Attribution',        prompt: 'how much of the result is truly yours',
-    supplier: 'In this deal, is there an agreed way to decide how much of the result is due to your solution?',
-    customer: "In this deal, is there an agreed way to decide how much of the result is due to the supplier's solution?" },
-  { n: 6, key: 'confidence',       label: 'Confidence levels',  prompt: 'exposure scales with joint confidence',
-    supplier: 'In this deal, do you and the customer share a written view of how likely the target is to be hit?',
-    customer: 'In this deal, do you and the supplier share a written view of how likely the target is to be hit?' },
-  { n: 7, key: 'responsibilities', label: 'Responsibilities',   prompt: 'what each party must do, who pays to measure',
-    supplier: 'In this deal, is it written down what each side must do, by name, and who pays for measuring the result?',
-    customer: 'In this deal, is it written down what each side must do, by name, and who pays for measuring the result?' },
-  { n: 8, key: 'dispute',          label: 'Dispute resolution', prompt: 'what happens when numbers are contested',
-    supplier: 'In this deal, is there an agreed way to settle a disagreement about the numbers, separate from the usual contract clause?',
-    customer: 'In this deal, is there an agreed way to settle a disagreement about the numbers, separate from the usual contract clause?' },
-  { n: 9, key: 'rebaselining',     label: 'Re-baselining',      prompt: 'what happened that will reset the baseline',
-    supplier: 'In this deal, is there an agreed list of events that would reset the starting value, and a way to reset it?',
-    customer: 'In this deal, is there an agreed list of events that would reset the starting value, and a way to reset it?' }
+  { n: 1, key: "objectives", label: "Objectives", prompt: "what is the customer looking to achieve",
+    supplier: "Is what the customer wants to achieve written down?",
+    customer: "Is what you want to achieve written down?",
+    facilitator: { supplier: "In this deal, is the customer's business objective written down, with a named owner on their side?", customer: "In this deal, is your business objective written down, with a named owner on your side?" } },
+  { n: 2, key: "baselines", label: "Baselines", prompt: "current state, captured before you start",
+    supplier: "Is there a measured starting point for that result?",
+    customer: "Is there a measured starting point for that result?",
+    facilitator: { supplier: "In this deal, is there a measured starting value for the result the customer wants, with its source and date?", customer: "In this deal, is there a measured starting value for the result you want, with its source and date?" } },
+  { n: 3, key: "targets", label: "Targets", prompt: "the numbers and the deadlines",
+    supplier: "Is there an agreed target, a number and a date?",
+    customer: "Is there an agreed target, a number and a date?",
+    facilitator: { supplier: "In this deal, is there an agreed target, a number and a date, tied to that starting value?", customer: "In this deal, is there an agreed target, a number and a date, tied to that starting value?" } },
+  { n: 4, key: "evidence", label: "Evidence", prompt: "what data will prove it, who can audit it",
+    supplier: "Is it agreed what data will prove the result?",
+    customer: "Is it agreed what data will prove the result?",
+    facilitator: { supplier: "In this deal, is it agreed what data will show the result, where it comes from and who can audit it?", customer: "In this deal, is it agreed what data will show the result, where it comes from and who can audit it?" } },
+  { n: 5, key: "attribution", label: "Attribution", prompt: "how much of the result is truly yours",
+    supplier: "Is it agreed how much of the result is down to you?",
+    customer: "Is it agreed how much of the result is down to the supplier?",
+    facilitator: { supplier: "In this deal, is there an agreed way to decide how much of the result is due to your solution?", customer: "In this deal, is there an agreed way to decide how much of the result is due to the supplier's solution?" } },
+  { n: 6, key: "confidence", label: "Confidence levels", prompt: "exposure scales with joint confidence",
+    supplier: "Have both sides written down how likely the target is?",
+    customer: "Have both sides written down how likely the target is?",
+    facilitator: { supplier: "In this deal, do you and the customer share a written view of how likely the target is to be hit?", customer: "In this deal, do you and the supplier share a written view of how likely the target is to be hit?" } },
+  { n: 7, key: "responsibilities", label: "Responsibilities", prompt: "what each party must do, who pays to measure",
+    supplier: "Is it written down who does what, and who pays to measure?",
+    customer: "Is it written down who does what, and who pays to measure?",
+    facilitator: { supplier: "In this deal, is it written down what each side must do, by name, and who pays for measuring the result?", customer: "In this deal, is it written down what each side must do, by name, and who pays for measuring the result?" } },
+  { n: 8, key: "dispute", label: "Dispute resolution", prompt: "what happens when numbers are contested",
+    supplier: "Is there an agreed way to settle an argument over the numbers?",
+    customer: "Is there an agreed way to settle an argument over the numbers?",
+    facilitator: { supplier: "In this deal, is there an agreed way to settle a disagreement about the numbers, separate from the usual contract clause?", customer: "In this deal, is there an agreed way to settle a disagreement about the numbers, separate from the usual contract clause?" } },
+  { n: 9, key: "rebaselining", label: "Re-baselining", prompt: "what happened that will reset the baseline",
+    supplier: "Is it agreed what would reset the starting point?",
+    customer: "Is it agreed what would reset the starting point?",
+    facilitator: { supplier: "In this deal, is there an agreed list of events that would reset the starting value, and a way to reset it?", customer: "In this deal, is there an agreed list of events that would reset the starting value, and a way to reset it?" } }
 ]);
 
 // ── The ladder ──────────────────────────────────────────────────────────────
@@ -78,20 +89,22 @@ const ELEMENTS = Object.freeze([
 // one to one. "I don't know" is stored as the string "dk", never as a rung.
 const LADDER = Object.freeze({
   supplier: Object.freeze([
-    "We don't have one.",
-    "It's in our internal notes or CRM. The customer has never seen it.",
-    "It's in the proposal or business case.",
-    "It's written into the contract.",
-    "It's live through delivery, reviews and renewal."
+    'No. Nothing exists yet.',
+    "Only in our own notes. The customer hasn't seen it.",
+    'In the proposal or business case.',
+    'In the contract.',
+    'Live: in delivery, reviews and renewal.'
   ]),
   customer: Object.freeze([
-    'We were never shown one.',
-    'It was discussed but never written down for us.',
-    'It was in the proposal or business case we received.',
-    'It is written into our contract.',
-    'We see it live in dashboards and reviews.'
+    'No. Nothing was ever shared with us.',
+    'Discussed, but never written down for us.',
+    'In the proposal we received.',
+    'In our contract.',
+    'Live: we see it in dashboards and reviews.'
   ])
 });
+// The question eyebrow, shown once per screen instead of starting every sentence.
+const QUESTION_FRAME = 'In this deal';
 const DONT_KNOW = 'dk';
 const SHOW_TICK_PROMPT = 'Could you put it on screen in the next two minutes?';
 const SHOW_TICK_MIN_RUNG = 2;   // the tick appears only when the respondent claims to have the element
@@ -307,8 +320,8 @@ function mutedRungs(perspective, role) {
 // Content only. The scoring function, NA rules and grid cell shape stay on the server.
 function publicConfig() {
   return {
-    instrumentVersion: INSTRUMENT_VERSION, consentVersion: CONSENT_VERSION,
-    perspectives: PERSPECTIVES, moments: MOMENTS, elements: ELEMENTS, ladder: LADDER, dontKnow: DONT_KNOW,
+    instrumentVersion: INSTRUMENT_VERSION, consentVersion: CONSENT_VERSION, questionFrame: QUESTION_FRAME,
+    perspectives: PERSPECTIVES, moments: MOMENTS, elements: ELEMENTS.map(function (e) { return { n: e.n, key: e.key, label: e.label, prompt: e.prompt, supplier: e.supplier, customer: e.customer }; }), ladder: LADDER, dontKnow: DONT_KNOW,
     showTickPrompt: SHOW_TICK_PROMPT, showTickMinRung: SHOW_TICK_MIN_RUNG, rungMoments: RUNG_MOMENTS,
     headlineLevels: HEADLINE_LEVELS, headlineKeys: HEADLINE_KEYS, headlineQuestions: HEADLINE_QUESTIONS,
     salesQuestion: SALES_QUESTION, salesQuestionOptions: SALES_QUESTION_OPTIONS, salesRole: SALES_ROLE, gaps: GAPS,
@@ -320,7 +333,7 @@ function publicConfig() {
 
 module.exports = {
   INSTRUMENT_VERSION, CONSENT_VERSION, ROLES, SIGNED_IN_ROLES, PERSPECTIVES,
-  MOMENTS, ELEMENTS, LADDER, DONT_KNOW, SHOW_TICK_PROMPT, SHOW_TICK_MIN_RUNG, RUNG_MOMENTS,
+  MOMENTS, ELEMENTS, LADDER, QUESTION_FRAME, DONT_KNOW, SHOW_TICK_PROMPT, SHOW_TICK_MIN_RUNG, RUNG_MOMENTS,
   HEADLINE_LEVELS, HEADLINE_KEYS, HEADLINE_QUESTIONS, SALES_QUESTION, SALES_QUESTION_OPTIONS, SALES_ROLE, GAPS,
   ROLE_MOMENTS, GRID_ROWS, EXPECTED, expectedAt, gridTotals, expectedExtent, freshGrid,
   BANDS, signedBand, renewalBand, CONFIG, disagree,
