@@ -1,5 +1,5 @@
 /* It's The Outcome. Value diagnostic: Airtable proxy.
-   DIAG_PROXY_CHECK_P1_2026_10
+   DIAG_PROXY_CHECK_P2_2026_10
 
    The security boundary. The browser never touches Airtable. Copied from the Sprint and
    Development Model proxy pattern: role and account come only from the verified Clerk JWT, never
@@ -7,11 +7,13 @@
    crypto.randomBytes; the share view never returns a session token; every owner write is
    shape-checked and rebuilt server side rather than patched through.
 
-   Phase 1 actions: config, start, answer, list. Everything else returns 400. */
+   Phase 1: config, start, answer, list. Phase 2: complete, profile, report. Everything else 400. */
 
 'use strict';
 const crypto = require('crypto');
 const CORE = require('./lib/diag-core');
+const REPORT = require('./lib/diag-report');
+let sendEmail = null; try { sendEmail = require('./lib/email').sendEmail; } catch (e) { sendEmail = null; }
 
 // ── Environment (names only; values live in Netlify) ────────────────────────
 const AIRTABLE_BASE  = process.env.DIAG_AIRTABLE_BASE  || process.env.AIRTABLE_BASE;
@@ -19,6 +21,10 @@ const AIRTABLE_TOKEN = process.env.DIAG_AIRTABLE_TOKEN || process.env.AIRTABLE_T
 const CLERK_ISSUER   = (process.env.CLERK_ISSUER || '').replace(/\/+$/, '');
 const DAILY_DOMAIN_LIMIT = Number(process.env.DIAG_DAILY_DOMAIN_LIMIT) || 25;
 const HASH_SALT = process.env.DIAG_HASH_SALT || AIRTABLE_BASE || 'diag';
+const NOTIFY_EMAIL = process.env.NOTIFY_EMAIL || '';
+const APP_ORIGIN = (process.env.APP_ORIGIN || 'https://lifecycle.itstheoutcome.com').replace(/\/+$/, '');
+// Personal-mail domains. Responses from these can answer but never count toward the benchmark.
+const FREE_MAIL = new Set(['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'yahoo.com', 'yahoo.co.uk', 'icloud.com', 'me.com', 'mac.com', 'aol.com', 'proton.me', 'protonmail.com', 'mail.com', 'gmx.com', 'yandex.com']);
 
 const TABLES = Object.freeze({ DEALS: 'Deals', RESPONSES: 'Responses', INVITES: 'Invites', SESSIONS: 'Sessions', COMPANIES: 'Companies', RULINGS: 'Rulings', AGGREGATES: 'Aggregates' });
 
@@ -109,6 +115,37 @@ async function verifyClerkSession(tok) {
   if (payload.nbf && now < payload.nbf - 5) return null;
   if (payload.iss && payload.iss.replace(/\/+$/, '') !== CLERK_ISSUER) return null;
   return payload;
+}
+
+// ── Report helpers ──────────────────────────────────────────────────────────
+async function responseBySession(tok) {
+  if (!/^sess_[A-Za-z0-9_-]{20,40}$/.test(String(tok || ''))) return null;
+  const r = await atListAll(TABLES.RESPONSES, '{Session token}="' + safe(tok) + '"');
+  return (r.status === 200 && (r.data.records || [])[0]) || null;
+}
+async function responseByResults(tok) {
+  if (!/^res_[A-Za-z0-9_-]{24,48}$/.test(String(tok || ''))) return null;
+  const r = await atListAll(TABLES.RESPONSES, '{Results token}="' + safe(tok) + '"');
+  return (r.status === 200 && (r.data.records || [])[0]) || null;
+}
+function reportInput(f) {
+  return { answers: J(f['Answers']) || {}, headlines: J(f['Headlines']) || {}, role: f['Respondent role'] || '', perspective: f['Perspective'] || CORE.PERSPECTIVES.SUPPLIER,
+    salesQuestion: f['Sales question'] || null, instrumentVersion: f['Instrument version'] || CORE.INSTRUMENT_VERSION };
+}
+// A response counts toward published segments only if it is complete, carries a work email domain,
+// is the first response from that role on that deal, and did not trip the plausibility flag.
+// Set only here, never from the client.
+async function benchmarkEligible(f) {
+  if (!f['Completed at'] || f['Plausibility flag'] === true) return false;
+  const domain = String(f['Email domain'] || '');
+  if (!domain || FREE_MAIL.has(domain)) return false;
+  const others = await atListAll(TABLES.RESPONSES, 'AND({Deal code}="' + safe(f['Deal code']) + '",{Respondent role}="' + safe(f['Respondent role']) + '")');
+  const sorted = (others.data.records || []).filter(x => (x.fields || {})['Completed at']).sort((a, b) => String(a.fields['Completed at']).localeCompare(String(b.fields['Completed at'])));
+  return !!sorted.length && sorted[0].fields['Response key'] === f['Response key'];
+}
+async function notify(subject, lines) {
+  if (!sendEmail || !NOTIFY_EMAIL) return;
+  try { await sendEmail({ from: 'notifications', to: NOTIFY_EMAIL, subject, heading: subject, bodyHtml: '<p>' + lines.map(l => String(l).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])).join('<br/>') + '</p>', text: lines.join('\n') }); } catch (e) {}
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
@@ -237,6 +274,101 @@ exports.handler = async function (event) {
       const u = await atUpdate(TABLES.RESPONSES, rec.id, patch);
       if (u.status >= 300) return reply(502, { error: 'Could not save', detail: atErr(u) });
       return reply(200, { ok: true });
+    }
+
+    // ── complete: sess_. Mark complete, record time, flag implausible speed, notify, return report. ──
+    if (action === 'complete') {
+      const rec = await responseBySession(body.sessionToken);
+      if (!rec) return reply(403, { error: 'Forbidden' });
+      const f = rec.fields || {};
+      if (f['Completed at']) return reply(200, { ok: true, report: REPORT.singleView(reportInput(f)), resultsToken: f['Results token'], alreadyComplete: true });
+      const answers = J(f['Answers']) || {};
+      const answeredCount = Object.keys(answers).filter(k => answers[k] && answers[k].rung !== undefined).length;
+      if (answeredCount < 9) return reply(400, { error: 'incomplete', answered: answeredCount });
+      const ts = nowIso();
+      const seconds = Math.max(0, Math.round((new Date(ts) - new Date(f['Created at'] || ts)) / 1000));
+      const flagged = seconds < CORE.CONFIG.plausibilityFloorSeconds;
+      const patch = { 'Completed at': ts, 'Seconds to complete': seconds, 'Plausibility flag': flagged };
+      const merged = Object.assign({}, f, patch);
+      patch['Counted in benchmark'] = await benchmarkEligible(merged);
+      const u = await atUpdate(TABLES.RESPONSES, rec.id, patch);
+      if (u.status >= 300) return reply(502, { error: 'Could not complete', detail: atErr(u) });
+      const input = reportInput(merged), counts = REPORT.summaryCounts(input);
+      // Notification to Martin: role, mode, email domain if given, elements short, don't-knows. No names.
+      const deal = (await atListAll(TABLES.DEALS, '{Deal code}="' + safe(f['Deal code']) + '"')).data.records || [];
+      const mode = deal[0] && deal[0].fields ? deal[0].fields['Mode'] : 'Quick check';
+      await notify('Diagnostic completed: ' + (f['Respondent role'] || 'unknown role') + ', ' + mode,
+        ['Deal ' + f['Deal code'], 'Perspective: ' + (f['Perspective'] || ''), 'Role: ' + (f['Respondent role'] || ''), 'Mode: ' + mode,
+         'Email domain: ' + (f['Email domain'] || 'not given'), 'Elements short of expected: ' + counts.short + ' of 9', "Don't knows: " + counts.dontKnow,
+         'Seconds to complete: ' + seconds + (flagged ? ' (flagged as implausibly fast)' : ''), APP_ORIGIN + '/check?r=' + f['Results token']]);
+      return reply(200, { ok: true, report: REPORT.singleView(input), resultsToken: f['Results token'], seconds, flagged });
+    }
+
+    // ── profile: sess_. The optional post-report fields and the email. ──────
+    if (action === 'profile') {
+      const rec = await responseBySession(body.sessionToken);
+      if (!rec) return reply(403, { error: 'Forbidden' });
+      const f = rec.fields || {};
+      const rpatch = {}, dpatch = {};
+      const emailIn = String(body.email || '').trim().toLowerCase();
+      if (emailIn) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailIn)) return reply(400, { error: 'bad_email' });
+        const domain = emailIn.split('@').pop();
+        const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+        const today = await atListAll(TABLES.RESPONSES, 'AND({Email domain}="' + safe(domain) + '",IS_AFTER({Created at},"' + since + '"))');
+        if (today.status === 200 && (today.data.records || []).length >= DAILY_DOMAIN_LIMIT) return reply(429, { error: 'daily_limit' });
+        rpatch['Email'] = emailIn; rpatch['Email domain'] = domain; dpatch['Email domain'] = domain;
+        // A customer who gives an email gets a portfolio: every further deal under that email joins it.
+        if (f['Perspective'] === CORE.PERSPECTIVES.CUSTOMER) dpatch['Portfolio key'] = 'pf_' + hash(emailIn);
+      }
+      if (body.sizeBand !== undefined)      { if (CORE.BANDS.size.indexOf(body.sizeBand) < 0) return reply(400, { error: 'bad_size_band' }); dpatch['Size band'] = body.sizeBand; }
+      if (body.valueBand !== undefined)     { if (CORE.BANDS.value.indexOf(body.valueBand) < 0) return reply(400, { error: 'bad_value_band' }); dpatch['Value band'] = body.valueBand; }
+      if (body.valueFunction !== undefined) { if (CORE.BANDS.valueFunction.indexOf(body.valueFunction) < 0) return reply(400, { error: 'bad_value_function' }); dpatch['Value function'] = body.valueFunction; }
+      if (body.industry !== undefined)      dpatch['Customer industry'] = String(body.industry).slice(0, 80);
+      if (body.serviceLines !== undefined)  dpatch['Service lines'] = String(body.serviceLines).slice(0, 160);
+      if (Number.isFinite(Number(body.secondsReading))) rpatch['Seconds reading'] = Math.max(0, Math.round(Number(body.secondsReading)));
+      if (!Object.keys(rpatch).length && !Object.keys(dpatch).length) return reply(400, { error: 'nothing_to_save' });
+      if (Object.keys(rpatch).length) {
+        if (rpatch['Email domain']) rpatch['Counted in benchmark'] = await benchmarkEligible(Object.assign({}, f, rpatch));
+        const u = await atUpdate(TABLES.RESPONSES, rec.id, rpatch);
+        if (u.status >= 300) return reply(502, { error: 'Could not save', detail: atErr(u) });
+      }
+      if (Object.keys(dpatch).length) {
+        const deal = (await atListAll(TABLES.DEALS, '{Deal code}="' + safe(f['Deal code']) + '"')).data.records || [];
+        if (deal[0]) { const u2 = await atUpdate(TABLES.DEALS, deal[0].id, dpatch); if (u2.status >= 300) return reply(502, { error: 'Could not save the deal profile', detail: atErr(u2) }); }
+      }
+      // The copy, from hello@, with the return link. Swallowed on failure; mail never fails a request.
+      if (emailIn && sendEmail && f['Completed at']) {
+        try {
+          await sendEmail({ from: 'hello', to: emailIn, subject: 'Your value diagnostic report, deal ' + f['Deal code'],
+            heading: 'Your report is ready', bodyHtml: '<p>You ran the value diagnostic on one deal, by code ' + f['Deal code'] + ', from the ' + String(f['Respondent role'] || '').toLowerCase() + ' seat. This link brings the report back any time, and lets you invite a counterpart to answer from their own seat.</p><p>No customer name was recorded, and none ever will be.</p>',
+            ctaLabel: 'Open your report', ctaUrl: APP_ORIGIN + '/check?r=' + f['Results token'],
+            text: 'Your value diagnostic report for deal ' + f['Deal code'] + ': ' + APP_ORIGIN + '/check?r=' + f['Results token'] });
+        } catch (e) {}
+      }
+      return reply(200, { ok: true, emailSaved: !!emailIn, portfolio: !!dpatch['Portfolio key'] });
+    }
+
+    // ── report: sess_, res_, or a signed-in role. The single view, computed here. ──
+    if (action === 'report') {
+      let rec = null;
+      if (body.sessionToken) rec = await responseBySession(body.sessionToken);
+      else if (body.resultsToken) rec = await responseByResults(body.resultsToken);
+      else if (session && signedIn && body.responseKey) {
+        const r = await atListAll(TABLES.RESPONSES, '{Response key}="' + safe(body.responseKey) + '"');
+        rec = (r.data.records || [])[0] || null;
+        if (rec && !isSuper) {
+          const deal = ((await atListAll(TABLES.DEALS, '{Deal code}="' + safe(rec.fields['Deal code']) + '"')).data.records || [])[0];
+          const df = (deal && deal.fields) || {};
+          const owns = isFacilitator ? df['Account'] === account : isRep ? df['Rep key'] === repKey : false;
+          if (!owns) return reply(403, { error: 'Forbidden' });
+        }
+      }
+      if (!rec) return reply(body.sessionToken || body.resultsToken ? 403 : 401, { error: body.sessionToken || body.resultsToken ? 'Forbidden' : 'Sign-in required' });
+      const f = rec.fields || {};
+      if (!f['Completed at']) return reply(409, { error: 'not_complete' });
+      // The share view carries the report only: no email, no session token, nothing else from the row.
+      return reply(200, { report: REPORT.singleView(reportInput(f)), completedAt: f['Completed at'], dealCode: f['Deal code'] });
     }
 
     // ── list: Clerk JWT. Scoped by role and account; anonymous gets 401. ─────

@@ -68,6 +68,60 @@ const ok=(label,cond)=>{console.log((cond?'ok   ':'FAIL ')+label);if(!cond)proce
  r=await call({action:'list'},REP2); ok('list: another rep sees nothing of it', r.code===200&&r.body.records.length===0);
  r=await call({action:'list',table:'Responses'},REP); ok('list: rep responses joined through deal, no Email, no Session token', r.body.records.length===1&&r.body.records[0].fields.Email===undefined&&r.body.records[0].fields['Session token']===undefined);
  r=await call({action:'list'},FAC); ok('list: facilitator scoped by account', r.code===200&&r.body.records.every(x=>x.fields.Account==='ecosystems'));
+ // ── Phase 2: complete, profile, report ──────────────────────────────
+ let notes=[]; process.env.NOTIFY_EMAIL='m@ito.com';
+ r=await call({action:'complete',sessionToken:S.sessionToken}); ok('complete: refuses with fewer than nine answers', r.code===400&&r.body.error==='incomplete');
+ for(let e=4;e<=9;e++) await call({action:'answer',sessionToken:S.sessionToken,element:e,rung:e===9?0:(e%2?4:2),showTick:e===4});
+ await call({action:'answer',sessionToken:S.sessionToken,headline:'contracted',level:'operational'});
+ await call({action:'answer',sessionToken:S.sessionToken,headline:'provable',level:'technical'});
+ r=await call({action:'report',sessionToken:S.sessionToken}); ok('report: 409 before completion', r.code===409);
+ r=await call({action:'complete',sessionToken:S.sessionToken});
+ ok('complete: 200 with a report and the results token', r.code===200&&r.body.report&&r.body.resultsToken===S.resultsToken);
+ const R=r.body.report, rf=store.Responses[0].fields;
+ ok('complete: stamps Completed at, seconds, plausibility (fast test run is flagged), benchmark false without email', rf['Completed at']&&typeof rf['Seconds to complete']==='number'&&rf['Plausibility flag']===true&&rf['Counted in benchmark']===false);
+ ok('report: headline counts reached and dk separately, no summary score', /of 9 reach where good practice expects/.test(R.headline.line)&&R.headline.dontKnow===1&&R.headline.reached===2&&!('score' in R));
+ const byN=Object.fromEntries(R.elements.map(x=>[x.n,x]));
+ ok('report: dk is "Not visible to you" and does not count', byN[2].status.key==='dk'&&byN[2].status.counts===false);
+ ok('report: rung 1 reads as exists but never seen', byN[3].status.key==='internal');
+ ok('report: rung 0 reads as not in place', byN[9].status.key==='absent');
+ ok('report: rung 2 stops short and names the next rung', byN[4].status.key==='short'&&/Expected to reach/.test(byN[4].status.label));
+ ok('report: rung 4 reaches the expected extent', byN[5].status.reached===true&&byN[5].extent===4);
+ ok('report: headline levels and gaps: sold financial, contracted operational, provable technical gives promise and exposure gaps', R.headlineLevels.gaps.map(g=>g.key).join(',')==='promise,exposure');
+ ok('report: carries comparator hypothesis and limits lines, role tagged', /not a benchmark/.test(R.comparator)&&/facilitator/.test(R.limits)&&R.role==='Sales'&&R.view==='Single');
+ r=await call({action:'complete',sessionToken:S.sessionToken}); ok('complete: idempotent on a second call', r.code===200&&r.body.alreadyComplete===true);
+ r=await call({action:'answer',sessionToken:S.sessionToken,element:1,rung:0}); ok('answer: locked after completion', r.code===403);
+ // profile
+ r=await call({action:'profile',sessionToken:S.sessionToken,email:'not-an-email'}); ok('profile: bad email refused', r.code===400);
+ r=await call({action:'profile',sessionToken:S.sessionToken,email:'Jo@Acme.com',sizeBand:'Enterprise',valueFunction:'No',industry:'Logistics',secondsReading:140});
+ ok('profile: saves email, domain, bands on the deal, reading time', r.code===200&&store.Responses[0].fields.Email==='jo@acme.com'&&store.Responses[0].fields['Email domain']==='acme.com'&&store.Deals[0].fields['Size band']==='Enterprise'&&store.Deals[0].fields['Value function']==='No'&&store.Responses[0].fields['Seconds reading']===140);
+ ok('profile: benchmark re-evaluated, still false because the plausibility flag tripped', store.Responses[0].fields['Counted in benchmark']===false);
+ ok('profile: supplier gets no portfolio key', store.Deals[0].fields['Portfolio key']===undefined);
+ r=await call({action:'profile',sessionToken:S.sessionToken,sizeBand:'Huge'}); ok('profile: band enforced', r.code===400);
+ // free mail never counts; work mail on a slow, complete, first response does
+ const good2=Object.assign({},good,{respondentRole:'Customer success'});
+ r=await call(good2); const T=r.body;
+ for(let e=1;e<=9;e++) await call({action:'answer',sessionToken:T.sessionToken,element:e,rung:3});
+ store.Responses.find(x=>x.fields['Session token']===T.sessionToken).fields['Created at']=new Date(Date.now()-600000).toISOString();
+ await call({action:'complete',sessionToken:T.sessionToken});
+ await call({action:'profile',sessionToken:T.sessionToken,email:'cs@acme.com'});
+ ok('benchmark: complete + work domain + first from role + plausible => counted', store.Responses.find(x=>x.fields['Session token']===T.sessionToken).fields['Counted in benchmark']===true);
+ r=await call(Object.assign({},good,{respondentRole:'Executive'})); const G=r.body;
+ for(let e=1;e<=9;e++) await call({action:'answer',sessionToken:G.sessionToken,element:e,rung:3});
+ store.Responses.find(x=>x.fields['Session token']===G.sessionToken).fields['Created at']=new Date(Date.now()-600000).toISOString();
+ await call({action:'complete',sessionToken:G.sessionToken}); await call({action:'profile',sessionToken:G.sessionToken,email:'exec@gmail.com'});
+ ok('benchmark: gmail answers but never counts', store.Responses.find(x=>x.fields['Session token']===G.sessionToken).fields['Counted in benchmark']===false);
+ // customer portfolio key
+ r=await call(Object.assign({},good,{perspective:'Customer view',respondentRole:'Procurement or commercial'})); const P=r.body;
+ for(let e=1;e<=9;e++) await call({action:'answer',sessionToken:P.sessionToken,element:e,rung:2});
+ await call({action:'complete',sessionToken:P.sessionToken}); await call({action:'profile',sessionToken:P.sessionToken,email:'buyer@bigco.com'});
+ const pd=store.Deals.find(d=>d.fields['Deal code']===P.dealCode).fields;
+ ok('profile: customer with email gets a Portfolio key (salted hash, not the email)', /^pf_/.test(pd['Portfolio key'])&&!/bigco/.test(pd['Portfolio key']));
+ // share link
+ r=await call({action:'report',resultsToken:S.resultsToken}); ok('report via res_ token: report only, no email, no session token', r.code===200&&r.body.report&&!JSON.stringify(r.body).includes('sess_')&&!JSON.stringify(r.body).includes('acme.com'));
+ r=await call({action:'report',resultsToken:'res_nope'}); ok('report: bad res_ token refused', r.code===403);
+ r=await call({action:'report',responseKey:S.responseKey},SUPER); ok('report: super by response key', r.code===200);
+ r=await call({action:'report',responseKey:S.responseKey},REP); ok('report: rep refused on a deal that is not theirs', r.code===403);
+ r=await call({action:'report',responseKey:S.responseKey}); ok('report: anonymous without any token is 401', r.code===401);
  r=await call({action:'session.create'},SUPER); ok('unknown action is 400', r.code===400);
  console.log(process.exitCode?'\nSOME CHECKS FAILED':'\nALL PROXY CHECKS PASS');
 })();

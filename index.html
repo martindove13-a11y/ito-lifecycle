@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- DIAG_BUILD_MARKER_2026_10_P1 -->
+<!-- DIAG_BUILD_MARKER_2026_10_P2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -28,7 +28,7 @@
   .logo-outcome { font-size: 15px; color: #fff; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
   .logo-period { color: var(--orange); }
   .header-rule { flex: 1; height: 1px; background: rgba(255,255,255,0.12); }
-  .header-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); }
+  .header-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); white-space: nowrap; flex-shrink: 0; }
   .wrap { max-width: 640px; margin: 0 auto; padding: 3rem 1.25rem 5rem; flex: 1; width: 100%; }
   .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); display: block; margin-bottom: 8px; }
   h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; }
@@ -53,7 +53,8 @@
   <h1>Pick one deal that is heading for renewal.</h1>
   <p>The diagnostic asks nine questions about that one deal, from your own seat, and shows you where the thread between what was promised and what can be shown today breaks. Under ten minutes. No customer names, ever.</p>
   <div class="rule"></div>
-  <p class="muted">The check opens here shortly. Facilitators and reps can <a href="/login" style="color:inherit;">sign in</a>.</p>
+  <a href="/check" style="display:inline-block;background:var(--orange);color:#fff;font-weight:700;font-size:13px;letter-spacing:0.02em;padding:12px 22px;border-radius:var(--radius);text-decoration:none;">Run the check</a>
+  <p class="muted" style="margin-top:1.25rem;">Facilitators and reps <a href="/login" style="color:inherit;">sign in here</a>.</p>
 </main>
 
 <footer class="foot">It's The Outcome</footer>

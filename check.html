@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<!-- DIAG_BUILD_MARKER_2026_10_P2 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Value diagnostic. It's The Outcome.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #111111; --orange: #E05C2A; --offwhite: #F5F4F1; --midgray: #6B6B6B;
+    --bg: var(--offwhite); --bg-secondary: #ECEAE6; --bg-card: #FFFFFF;
+    --text: var(--black); --text-secondary: var(--midgray); --text-tertiary: #9B9B9B;
+    --border: rgba(17,17,17,0.10); --border-md: rgba(17,17,17,0.20); --border-strong: rgba(17,17,17,0.35);
+    --bg-success: #DFF0D0; --bg-info: #D6E8F7; --bg-warning: #FAE8C8; --bg-danger: #FAD6D0;
+    --text-success: #2A5C0E; --text-info: #0F4880; --text-warning: #7A3E00; --text-danger: #8C1F10;
+    --radius: 4px; --radius-lg: 6px; --radius-xl: 8px;
+    --font: 'Inter', Helvetica Neue, Helvetica, Arial, sans-serif;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+  .site-header { background: var(--black); padding: 0 1.25rem; display: flex; align-items: center; height: 52px; gap: 16px; }
+  .logo-lockup { display: flex; flex-direction: column; line-height: 1.04; }
+  .logo-its { font-size: 8px; color: rgba(255,255,255,0.80); line-height: 1; }
+  .logo-outcome { font-size: 15px; color: #fff; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .logo-period { color: var(--orange); }
+  .header-rule { flex: 1; height: 1px; background: rgba(255,255,255,0.12); }
+  .header-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); white-space: nowrap; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 1.5rem 1.25rem 5rem; }
+  .screen { display: none; } .screen.active { display: block; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 8px; }
+  h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.4; margin-bottom: 8px; }
+  .eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); display: block; margin-bottom: 8px; }
+  .sub { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+  .small { font-size: 12px; color: var(--text-tertiary); line-height: 1.6; }
+  .prompt { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+  .progress { height: 2px; background: var(--border-md); margin-bottom: 1.5rem; } .progress i { display: block; height: 100%; background: var(--orange); transition: width 0.3s; }
+  .opt { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; background: var(--bg); font-size: 13px; line-height: 1.55; }
+  .opt .dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border-md); flex-shrink: 0; margin-top: 2px; }
+  .opt.sel { border-color: var(--border-info); background: var(--bg-info); color: var(--text-info); } .opt.sel .dot { border-color: #378add; background: #378add; }
+  .opt.muted { opacity: 0.55; } .opt.muted .note { display: block; font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
+  .opt.dk { border-style: dashed; color: var(--text-secondary); }
+  .tick { display: none; align-items: center; gap: 10px; padding: 10px 14px; margin: -2px 0 10px; font-size: 12px; color: var(--text-secondary); background: var(--bg-secondary); border-radius: var(--radius); }
+  .tick.show { display: flex; } .tick input { width: 16px; height: 16px; }
+  button { font-family: var(--font); font-size: 13px; font-weight: 700; letter-spacing: 0.02em; padding: 12px 18px; border: 1px solid var(--border-md); border-radius: var(--radius); background: var(--bg-card); color: var(--text); cursor: pointer; }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .primary { background: var(--orange); color: #fff; border-color: var(--orange); width: 100%; }
+  .black { background: var(--black); color: #fff; border-color: var(--black); }
+  .ghost { background: none; border: none; color: var(--text-secondary); font-weight: 500; padding: 8px 0; text-decoration: underline; }
+  .row { display: flex; gap: 8px; } .row > * { flex: 1; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  select, input[type=text], input[type=email] { width: 100%; font-family: var(--font); font-size: 14px; padding: 10px 12px; border: 1px solid var(--border-md); border-radius: var(--radius); background: var(--bg-card); color: var(--text); }
+  label.l { display: block; font-size: 12px; font-weight: 600; margin: 14px 0 6px; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.1rem; margin-bottom: 10px; }
+  .hero { background: var(--black); color: #fff; border-radius: var(--radius-xl); padding: 1.4rem 1.4rem 1.3rem; margin-bottom: 12px; }
+  .hero .eyebrow { color: var(--orange); } .hero h2 { color: #fff; font-size: 22px; margin-bottom: 4px; } .hero p { font-size: 13px; color: rgba(255,255,255,0.80); line-height: 1.65; }
+  .note { padding: 11px 14px; border-radius: var(--radius); font-size: 12.5px; line-height: 1.6; margin-bottom: 10px; border-left: 2.5px solid; }
+  .n-info { background: var(--bg-info); color: var(--text-info); border-color: var(--border-info); }
+  .n-warn { background: var(--bg-warning); color: var(--text-warning); border-color: #C07020; }
+  .n-danger { background: var(--bg-danger); color: var(--text-danger); border-color: #C84030; }
+  .n-ok { background: var(--bg-success); color: var(--text-success); border-color: #6AAF3A; }
+  .strip { width: 100%; border-collapse: collapse; }
+  .strip th { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); font-weight: 700; padding: 0 2px 6px; text-align: center; border-bottom: 1px solid var(--border-md); }
+  .strip th.l { text-align: left; width: 30%; }
+  .strip td { padding: 0; height: 34px; border-left: 0.5px solid var(--border); position: relative; }
+  .strip td.l { border-left: none; font-size: 12px; color: var(--text-secondary); padding-right: 6px; line-height: 1.3; }
+  .strip tbody tr + tr td { border-top: 0.5px solid var(--border); }
+  .cell { position: absolute; inset: 6px 4px; border-radius: 3px; }
+  .cell.fill { background: var(--orange); } .cell.fill.lo { background: #C84030; } .cell.fill.hi { background: #6AAF3A; }
+  .cell.exp { border: 1.5px dashed var(--border-strong); }
+  .cell.dk { background: repeating-linear-gradient(45deg, transparent 0 3px, var(--border-md) 3px 4px); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--text-tertiary); margin-top: 8px; }
+  .legend i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+  details { border-top: 0.5px solid var(--border); padding: 10px 0; } summary { cursor: pointer; font-size: 13px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; }
+  summary::after { content: '+'; color: var(--text-tertiary); } details[open] summary::after { content: '\2212'; }
+  .status { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+  .s-reaches { background: var(--bg-success); color: var(--text-success); } .s-short { background: var(--bg-warning); color: var(--text-warning); }
+  .s-internal { background: var(--bg-warning); color: var(--text-warning); } .s-absent { background: var(--bg-danger); color: var(--text-danger); } .s-dk { background: var(--bg-secondary); color: var(--text-tertiary); }
+  .levels { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .lvl { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px; text-align: center; }
+  .lvl b { display: block; font-size: 15px; text-transform: capitalize; } .lvl span { font-size: 10px; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .banner { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: calc(100% - 32px); max-width: 520px; z-index: 50; border-radius: 6px; padding: 12px 16px; font-size: 13px; line-height: 1.55; background: var(--bg-danger); color: var(--text-danger); border: 1px solid #C84030; display: none; }
+  .foot { font-size: 11px; color: var(--text-tertiary); text-align: center; padding: 1rem; border-top: 0.5px solid var(--border); margin-top: 2rem; }
+  @media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } .levels { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="logo-lockup"><span class="logo-its">It's The</span><span class="logo-outcome">Outcome<span class="logo-period">.</span></span></div>
+  <div class="header-rule"></div>
+  <span class="header-tag">Value diagnostic</span>
+</header>
+
+<div class="wrap">
+  <div class="progress" id="progress" style="display:none;"><i id="pfill" style="width:0%"></i></div>
+  <div id="root"><p class="small">Getting the questions.</p></div>
+</div>
+<div class="banner" id="banner"></div>
+<footer class="foot">It's The Outcome</footer>
+
+<script>
+var PROXY = '/.netlify/functions/diag-airtable';
+var CFG = null;                       // from the config action, never hard-coded here
+var S = { perspective: 'Supplier view', role: '', commercialModel: '', renewalYear: '', renewalMonth: '', signedBand: '', consent: false,
+          sessionToken: null, resultsToken: null, dealCode: null, muted: [], salesQuestion: false, headlines: {}, answers: {}, sales: null, step: 0, reportShownAt: null };
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
+function banner(t) { var b = $('banner'); b.textContent = t; b.style.display = 'block'; clearTimeout(banner.t); banner.t = setTimeout(function () { b.style.display = 'none'; }, 6000); }
+async function api(payload) {
+  var r = await fetch(PROXY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  var d = null; try { d = await r.json(); } catch (e) {}
+  if (!r.ok) return { __error: (d && d.error) || ('HTTP ' + r.status), __detail: d && d.detail, __status: r.status };
+  return d || {};
+}
+var pk = function () { return S.perspective === 'Customer view' ? 'customer' : 'supplier'; };
+var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// ─── Boot ────────────────────────────────────────────────────────────────
+(async function boot() {
+  var p = new URLSearchParams(location.search);
+  CFG = await api({ action: 'config' });
+  if (CFG.__error) { $('root').innerHTML = '<p class="sub">The diagnostic could not load. Refresh in a moment.</p>'; return; }
+  if (p.get('r')) { await loadShared(p.get('r')); return; }
+  var saved = null; try { saved = JSON.parse(localStorage.getItem('diag_session') || 'null'); } catch (e) {}
+  if (saved && saved.sessionToken) { Object.assign(S, saved); showResume(); return; }
+  renderIntro();
+})();
+function persist() { try { localStorage.setItem('diag_session', JSON.stringify(S)); } catch (e) {} }
+function clearSession() { try { localStorage.removeItem('diag_session'); } catch (e) {} }
+function show(html) { $('root').innerHTML = html; window.scrollTo(0, 0); }
+function progress(p) { $('progress').style.display = p === null ? 'none' : ''; if (p !== null) $('pfill').style.width = p + '%'; }
+
+// ─── Screens before the questions ────────────────────────────────────────
+function renderIntro() {
+  progress(null);
+  show('<span class="eyebrow">Value diagnostic</span><h1>Who in your organization sees value end to end?</h1>' +
+    '<p class="sub" style="margin-bottom:1.25rem;">You don\'t have to. Answer what you can see, and invite the people who see the rest.</p>' +
+    '<div class="card"><p class="sub" style="margin-bottom:10px;"><strong style="color:var(--text);">Pick one existing customer deal</strong> that has been through the lifecycle and is heading for renewal, and hold it in mind. Never a new, unsigned deal. You will not be asked to name it.</p>' +
+    '<p class="small">Nine questions about that one deal, from your own seat. Under ten minutes on a phone. The report is immediate and nothing is gated behind an email.</p></div>' +
+    '<p class="prompt" style="margin-top:1rem;">Which side are you on?</p>' +
+    opt('persp', 'Supplier view', 'I work for the supplier', 'We sold it. I am answering about what my company promised and can show.') +
+    opt('persp', 'Customer view', 'I am the customer', 'We bought it. I am answering about what we were promised and can see.') +
+    '<button class="primary" id="next" disabled onclick="renderRole()">Continue</button>');
+  bindOpts('persp', function (v) { S.perspective = v; $('next').disabled = false; });
+}
+function opt(group, value, title, body, extra) {
+  return '<div class="opt' + (extra || '') + '" data-g="' + group + '" data-v="' + esc(value) + '"><div class="dot"></div><div><strong>' + esc(title) + '</strong>' + (body ? '<div class="small">' + esc(body) + '</div>' : '') + '</div></div>';
+}
+function bindOpts(group, onPick) {
+  document.querySelectorAll('.opt[data-g="' + group + '"]').forEach(function (el) {
+    el.onclick = function () { document.querySelectorAll('.opt[data-g="' + group + '"]').forEach(function (x) { x.classList.toggle('sel', x === el); }); onPick(el.dataset.v, el); };
+  });
+}
+function renderRole() {
+  var roles = Object.keys(CFG.roleMoments[pk()]);
+  show('<span class="eyebrow">First, your seat</span><h1>What is your role on this deal?</h1><p class="sub" style="margin-bottom:1rem;">It decides which moments we ask you about in full. The rest we ask anyway, and don\'t know is fine.</p>' +
+    roles.map(function (r) { return opt('role', r, r); }).join('') +
+    '<button class="primary" id="next" disabled onclick="renderDeal()">Continue</button>');
+  bindOpts('role', function (v) { S.role = v; $('next').disabled = false; });
+}
+function renderDeal() {
+  var y = new Date().getFullYear();
+  var years = []; for (var i = y - 1; i <= y + 5; i++) years.push(i);
+  show('<span class="eyebrow">The deal</span><h1>Three things the report needs.</h1><p class="sub">About the one deal you have in mind. No name, no customer.</p>' +
+    '<label class="l">How is it priced?</label><select id="cm"><option value="">Choose one</option>' + CFG.bands.commercialModel.map(function (b) { return '<option>' + esc(b) + '</option>'; }).join('') + '</select>' +
+    '<label class="l">When does it renew?</label><div class="grid2"><select id="rm"><option value="">Month</option>' + MONTHS.map(function (m, i) { return '<option value="' + (i + 1) + '">' + m + '</option>'; }).join('') + '</select>' +
+    '<select id="ry"><option value="">Year</option>' + years.map(function (v) { return '<option>' + v + '</option>'; }).join('') + '</select></div>' +
+    '<label class="l">How long since it was signed?</label>' + CFG.bands.signed.map(function (b) { return opt('sb', b, b); }).join('') +
+    '<button class="primary" id="next" style="margin-top:8px;" disabled onclick="renderConsent()">Continue</button>');
+  var check = function () { S.commercialModel = $('cm').value; S.renewalMonth = $('rm').value; S.renewalYear = $('ry').value; $('next').disabled = !(S.commercialModel && S.renewalMonth && S.renewalYear && S.signedBand); };
+  ['cm', 'rm', 'ry'].forEach(function (id) { $(id).onchange = check; });
+  bindOpts('sb', function (v) { S.signedBand = v; check(); });
+}
+function consentText() {
+  var side = pk() === 'customer'
+    ? 'Your answers describe one supplier relationship, by a code you choose, never by name.'
+    : 'Your answers describe one customer deal, by code, never by name.';
+  return '<p>' + side + ' They are stored by It\'s The Outcome and, with the answers of others, feed a published benchmark of how well value survives the customer lifecycle. No answer is ever published on its own, and no segment is published with fewer than ten responses.</p>' +
+    '<p>Your email is optional and asked only after the report. If you give it, it is used to send you a copy, to let you return, and to let you invite a counterpart. It is never published and never sold.</p>' +
+    '<p>You can ask for your record to be deleted at any time at <a href="mailto:support@itstheoutcome.com">support@itstheoutcome.com</a>, quoting your deal code.</p>';
+}
+function renderConsent() {
+  show('<span class="eyebrow">Before anything is saved</span><h1>One line of consent.</h1>' +
+    '<div class="card"><p class="sub">Your answers are stored by code, never by name, and feed a published benchmark. <button class="ghost" onclick="var d=document.getElementById(\'ctext\');d.style.display=d.style.display===\'none\'?\'\':\'none\';">Read the full text</button></p>' +
+    '<div id="ctext" class="small" style="display:none;margin-top:10px;line-height:1.7;">' + consentText() + '<p class="small">Consent version ' + esc(CFG.consentVersion) + '</p></div></div>' +
+    '<div class="opt" id="cbox" onclick="this.classList.toggle(\'sel\');S.consent=this.classList.contains(\'sel\');document.getElementById(\'next\').disabled=!S.consent;"><div class="dot"></div><div>I understand, and I agree.</div></div>' +
+    '<input class="honey" type="text" id="website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />' +
+    '<button class="primary" id="next" disabled onclick="start()">Start the check</button>');
+}
+async function start() {
+  var btn = $('next'); btn.disabled = true; btn.textContent = 'Starting';
+  var r = await api({ action: 'start', consent: true, consentVersion: CFG.consentVersion, perspective: S.perspective, respondentRole: S.role,
+    commercialModel: S.commercialModel, renewalYear: Number(S.renewalYear), renewalMonth: Number(S.renewalMonth), signedBand: S.signedBand, website: $('website').value, source: 'Website' });
+  if (r.__error) {
+    btn.disabled = false; btn.textContent = 'Start the check';
+    banner(r.__error === 'daily_limit' ? 'That is enough from one organization for today. Try again tomorrow.' : 'Could not start. ' + (r.__detail || r.__error));
+    return;
+  }
+  S.sessionToken = r.sessionToken; S.resultsToken = r.resultsToken; S.dealCode = r.dealCode; S.muted = r.mutedRungs || []; S.salesQuestion = !!r.salesQuestion; S.step = 0;
+  persist(); renderFraming();
+}
+function renderFraming() {
+  var known = CFG.roleMoments[pk()][S.role] || [];
+  var names = CFG.moments.filter(function (m) { return known.indexOf(m.n) >= 0; }).map(function (m) { return m.label; });
+  show('<span class="eyebrow">' + esc(S.role) + '</span><h1>These are the moments you are likely to know.</h1>' +
+    '<div class="card"><p class="sub">' + names.map(esc).join(' · ') + '</p></div>' +
+    '<p class="sub" style="margin-bottom:1.25rem;">The rest, we will ask you anyway, and don\'t know is fine. It is stored as its own answer and never counted as a gap.</p>' +
+    '<button class="primary" onclick="renderHeadline(0)">Continue</button>');
+}
+
+// ─── Headline questions ──────────────────────────────────────────────────
+var TOTAL_STEPS = function () { return 3 + (S.salesQuestion ? 1 : 0) + 9; };
+function renderHeadline(i) {
+  var keys = CFG.headlineKeys; if (i >= keys.length) return S.salesQuestion ? renderSales() : renderElement(1);
+  var key = keys[i]; progress(Math.round(i / TOTAL_STEPS() * 100));
+  show('<span class="eyebrow">Headline ' + (i + 1) + ' of 3</span><h1>' + esc(CFG.headlineQuestions[pk()][key]) + '</h1><p class="prompt">Pick the highest level that honestly applies.</p>' +
+    CFG.headlineLevels.map(function (l) { return opt('hl', l.key, l.label, l.definition); }).join('') +
+    opt('hl', CFG.dontKnow, "I don't know", '', ' dk') +
+    '<button class="primary" id="next" disabled onclick="renderHeadline(' + (i + 1) + ')">Continue</button>');
+  if (S.headlines[key]) document.querySelectorAll('.opt[data-g="hl"]').forEach(function (x) { if (x.dataset.v === S.headlines[key]) { x.classList.add('sel'); $('next').disabled = false; } });
+  bindOpts('hl', async function (v) { S.headlines[key] = v; $('next').disabled = false; persist(); var r = await api({ action: 'answer', sessionToken: S.sessionToken, headline: key, level: v }); if (r.__error) banner('That answer did not save. Check your connection and tap it again.'); });
+}
+function renderSales() {
+  progress(Math.round(3 / TOTAL_STEPS() * 100));
+  show('<span class="eyebrow">One more, for sales</span><h1>' + esc(CFG.salesQuestion) + '</h1>' +
+    CFG.salesQuestionOptions.map(function (o) { return opt('sq', o, o); }).join('') +
+    '<button class="primary" id="next" disabled onclick="renderElement(1)">Continue</button>');
+  bindOpts('sq', async function (v) { S.sales = v; $('next').disabled = false; persist(); var r = await api({ action: 'answer', sessionToken: S.sessionToken, salesQuestion: v }); if (r.__error) banner('That answer did not save. Tap it again.'); });
+}
+
+// ─── The nine elements ───────────────────────────────────────────────────
+function renderElement(n) {
+  if (n > 9) return finish();
+  var e = CFG.elements[n - 1], ladder = CFG.ladder[pk()], base = 3 + (S.salesQuestion ? 1 : 0);
+  progress(Math.round((base + n - 1) / TOTAL_STEPS() * 100));
+  var cur = S.answers[n];
+  var h = '<span class="eyebrow">' + n + ' of 9 · ' + esc(e.label) + '</span><h1>' + esc(e[pk()]) + '</h1><p class="prompt">' + esc(e.prompt.charAt(0).toUpperCase() + e.prompt.slice(1)) + '.</p>';
+  ladder.forEach(function (t, i) {
+    var muted = S.muted.indexOf(i) >= 0;
+    h += '<div class="opt' + (muted ? ' muted' : '') + (cur && cur.rung === i ? ' sel' : '') + '" data-g="el" data-v="' + i + '"><div class="dot"></div><div>' + esc(t) + (muted ? '<span class="note">Probably outside your view, but pick it if you know.</span>' : '') + '</div></div>';
+    if (i >= CFG.showTickMinRung && !CFG.config.showTickAfterReport) h += '<label class="tick" data-for="' + i + '"><input type="checkbox" /> ' + esc(CFG.showTickPrompt) + '</label>';
+  });
+  h += '<div class="opt dk' + (cur && cur.rung === CFG.dontKnow ? ' sel' : '') + '" data-g="el" data-v="' + CFG.dontKnow + '"><div class="dot"></div><div>I don\'t know</div></div>';
+  h += '<div class="row" style="margin-top:8px;">' + (n > 1 ? '<button onclick="renderElement(' + (n - 1) + ')">Back</button>' : '') + '<button class="primary" id="next" ' + (cur ? '' : 'disabled') + ' onclick="renderElement(' + (n + 1) + ')">' + (n === 9 ? 'See the report' : 'Continue') + '</button></div>';
+  show(h);
+  if (cur && typeof cur.rung === 'number') { var t = document.querySelector('.tick[data-for="' + cur.rung + '"]'); if (t) { t.classList.add('show'); t.querySelector('input').checked = !!cur.showTick; } }
+  bindOpts('el', function (v) {
+    var rung = v === CFG.dontKnow ? CFG.dontKnow : Number(v);
+    document.querySelectorAll('.tick').forEach(function (t) { t.classList.toggle('show', String(rung) === t.dataset.for); });
+    saveElement(n, rung, false);
+  });
+  document.querySelectorAll('.tick input').forEach(function (cb) { cb.onchange = function () { var r = S.answers[n]; if (r) saveElement(n, r.rung, cb.checked); }; });
+}
+async function saveElement(n, rung, showTick) {
+  S.answers[n] = { rung: rung, showTick: !!showTick }; $('next').disabled = false; persist();
+  var r = await api({ action: 'answer', sessionToken: S.sessionToken, element: n, rung: rung, showTick: !!showTick });
+  if (r.__error) banner('That answer did not save. Check your connection and tap it again.');
+}
+
+// ─── Finish and report ───────────────────────────────────────────────────
+async function finish() {
+  progress(100); show('<p class="sub">Working out where the thread breaks.</p>');
+  var r = await api({ action: 'complete', sessionToken: S.sessionToken });
+  if (r.__error) { show('<p class="sub">We could not finish. ' + esc(r.__detail || r.__error) + '</p><button class="primary" onclick="finish()">Try again</button>'); return; }
+  S.reportShownAt = Date.now(); persist();
+  renderReport(r.report, { own: true });
+}
+async function loadShared(tok) {
+  var r = await api({ action: 'report', resultsToken: tok });
+  if (r.__error) { show('<p class="sub">' + (r.__status === 409 ? 'This check is not finished yet.' : 'We could not find that report.') + '</p>'); return; }
+  renderReport(r.report, { own: false });
+}
+function showResume() {
+  show('<span class="eyebrow">Welcome back</span><h1>You have a check in progress.</h1><p class="sub" style="margin-bottom:1.25rem;">Pick up where you left off, or start again. Deal ' + esc(S.dealCode) + '.</p>' +
+    '<div class="row"><button class="black" onclick="resume()">Resume</button><button onclick="clearSession();location.reload();">Start again</button></div>');
+}
+function resume() {
+  if (S.reportShownAt) return finish();
+  var keys = CFG.headlineKeys, hi = keys.findIndex(function (k) { return !S.headlines[k]; });
+  if (hi >= 0) return renderHeadline(hi);
+  if (S.salesQuestion && !S.sales) return renderSales();
+  for (var n = 1; n <= 9; n++) if (!S.answers[n]) return renderElement(n);
+  return finish();
+}
+
+function strip(report) {
+  var ladder = report.ladder;
+  var h = '<table class="strip"><thead><tr><th class="l"></th>' + ladder.map(function (t, i) { return '<th title="' + esc(t) + '">' + (i === 0 ? 'None' : i === 1 ? 'Internal' : i === 2 ? 'Proposal' : i === 3 ? 'Contract' : 'Live') + '</th>'; }).join('') + '</tr></thead><tbody>';
+  report.elements.forEach(function (e) {
+    h += '<tr><td class="l">' + esc(e.label) + '</td>';
+    for (var i = 0; i <= 4; i++) {
+      var inner = '';
+      if (e.rung === 'dk') inner = i === 0 ? '<div class="cell dk" style="right:-100%;"></div>' : '';
+      else if (typeof e.rung === 'number' && i <= e.rung) inner = '<div class="cell fill' + (e.rung >= e.extent ? ' hi' : e.rung === 0 ? ' lo' : '') + '"></div>';
+      if (i === e.extent && e.rung !== 'dk') inner += '<div class="cell exp"></div>';
+      h += '<td>' + inner + '</td>';
+    }
+    h += '</tr>';
+  });
+  h += '</tbody></table><div class="legend"><span><i style="background:var(--orange)"></i>Your answer</span><span><i style="border:1.5px dashed var(--border-strong)"></i>Where good practice expects it</span><span><i class="cell dk" style="position:static"></i>Not visible to you</span></div>';
+  return h;
+}
+function renderReport(R, o) {
+  progress(null);
+  var hl = R.headlineLevels || {}, lv = hl.levels || {};
+  var h = '<span class="eyebrow">' + esc(R.perspective) + ' · ' + esc(R.role) + (o.own ? '' : ' · shared report') + '</span>';
+  h += '<div class="hero"><span class="eyebrow">In this deal</span><h2>' + esc(R.headline.line) + '.</h2><p>Each answer is compared with how far that element is expected to travel, not with how far the ladder goes. Don\'t knows are shown on their own and never averaged in.</p></div>';
+  h += '<div class="card">' + strip(R) + '</div>';
+  if (lv.sold || lv.contracted || lv.provable) {
+    h += '<span class="eyebrow" style="margin-top:1.25rem;">What was sold, committed, provable</span><div class="levels">' +
+      ['sold', 'contracted', 'provable'].map(function (k) { return '<div class="lvl"><span>' + k + '</span><b>' + esc(lv[k] === 'dk' ? 'Not known' : (lv[k] || 'Not answered')) + '</b></div>'; }).join('') + '</div>';
+    (hl.gaps || []).forEach(function (g) { h += '<div class="note ' + (g.key === 'opportunity' ? 'n-info' : 'n-warn') + '"><strong>' + esc(g.label) + '.</strong> ' + esc(g.text) + '.</div>'; });
+  }
+  h += '<span class="eyebrow" style="margin-top:1.25rem;">Element by element</span>';
+  R.elements.forEach(function (e) {
+    h += '<details><summary><span>' + esc(e.label) + '</span><span class="status s-' + e.status.key + '">' + esc(e.status.key === 'reaches' ? 'Reaches' : e.status.key === 'dk' ? 'Not visible' : e.status.key === 'absent' ? 'Not in place' : 'Short') + '</span></summary>' +
+      '<p class="sub" style="padding:6px 0 4px;">' + esc(e.status.label) + (e.showTick ? ' You said you could put it on screen in two minutes.' : '') + '</p></details>';
+  });
+  if (R.salesQuestion) h += '<div class="note n-info" style="margin-top:10px;">Evidence of what customers like them achieved: <strong>' + esc(R.salesQuestion) + '</strong>.</div>';
+  h += '<p class="small" style="margin-top:1.25rem;">' + esc(R.comparator) + '</p><p class="small">' + esc(R.limits) + ' A single response is a functional view, tagged by role.</p>';
+  if (o.own) h += postReport();
+  else h += '<div class="card" style="margin-top:1.25rem;"><p class="sub">Run the check on a deal of your own at <a href="/check" style="color:inherit;">lifecycle.itstheoutcome.com/check</a>.</p></div>';
+  show(h);
+  if (o.own) bindPostReport();
+}
+function postReport() {
+  var link = location.origin + '/check?r=' + S.resultsToken;
+  return '<div class="card" style="margin-top:1.5rem;"><span class="eyebrow">Keep this report</span><p class="sub" style="margin-bottom:8px;">This link brings it back any time.</p>' +
+    '<div class="row"><input type="text" readonly value="' + esc(link) + '" onclick="this.select()" style="font-size:12px;font-family:monospace;" /><button style="flex:0 0 auto;" onclick="navigator.clipboard.writeText(\'' + esc(link) + '\').then(function(){ banner(\'Copied.\'); })">Copy</button></div></div>' +
+    '<div class="card"><span class="eyebrow">Optional, all of it</span><p class="sub">An email sends you a copy, keeps a return link, and unlocks inviting a counterpart. Company, industry and size are inferred from the domain and never asked.</p>' +
+    '<label class="l">Work email</label><input type="email" id="pe" placeholder="you@company.com" />' +
+    '<label class="l">Deal size</label><select id="pv"><option value="">Prefer not to say</option>' + CFG.bands.value.map(function (b) { return '<option>' + esc(b) + '</option>'; }).join('') + '</select>' +
+    '<label class="l">Company size</label><select id="ps"><option value="">Prefer not to say</option>' + CFG.bands.size.map(function (b) { return '<option>' + esc(b) + '</option>'; }).join('') + '</select>' +
+    '<label class="l">Is there a value function in your organization today?</label><select id="pf"><option value="">Prefer not to say</option>' + CFG.bands.valueFunction.map(function (b) { return '<option>' + esc(b) + '</option>'; }).join('') + '</select>' +
+    '<button class="primary" id="psave" style="margin-top:14px;">Save</button><div id="pmsg"></div></div>' +
+    '<div class="card"><span class="eyebrow">Next</span><p class="sub">Send this deal to someone in sales, services or success and see the combined view. Opens shortly, once you have given an email above. The facilitated review, where a facilitator looks at the documents, is run as an engagement: <a href="mailto:hello@itstheoutcome.com" style="color:inherit;">hello@itstheoutcome.com</a>.</p></div>' +
+    '<p class="small" style="text-align:center;margin-top:1rem;">Deal ' + esc(S.dealCode) + '. <button class="ghost" onclick="clearSession();location.href=\'/check\';">Run another deal</button></p>';
+}
+function bindPostReport() {
+  $('psave').onclick = async function () {
+    var payload = { action: 'profile', sessionToken: S.sessionToken, secondsReading: S.reportShownAt ? Math.round((Date.now() - S.reportShownAt) / 1000) : undefined };
+    if ($('pe').value.trim()) payload.email = $('pe').value.trim();
+    if ($('pv').value) payload.valueBand = $('pv').value;
+    if ($('ps').value) payload.sizeBand = $('ps').value;
+    if ($('pf').value) payload.valueFunction = $('pf').value;
+    $('psave').disabled = true;
+    var r = await api(payload);
+    $('psave').disabled = false;
+    if (r.__error) { banner(r.__error === 'daily_limit' ? 'That is enough from one organization for today.' : r.__error === 'bad_email' ? 'That email does not look right.' : 'Could not save. ' + (r.__detail || r.__error)); return; }
+    $('pmsg').innerHTML = '<div class="note n-ok" style="margin-top:10px;">Saved.' + (r.emailSaved ? ' A copy is on its way.' : '') + (r.portfolio ? ' Every further supplier you check under this email joins the same portfolio.' : '') + '</div>';
+  };
+}
+</script>
+</body>
+</html>
